@@ -26,11 +26,14 @@ func Logger(log *logger.Logger) web.Middleware {
 			c.Next()
 
 			// after request
-			latency := time.Since(t)
 
-			log.Info(c.Request.Context(), "request completed", "method", r.Method, "path", path,
-				"remoteaddr", r.RemoteAddr, "statuscode" /*v.StatusCode*/, "since", latency)
+			defer func() {
+				latency := time.Since(t)
+				log.Info(c.Request.Context(), "request completed", "method", r.Method, "path", path,
+					"remoteaddr", r.RemoteAddr, "statuscode" /*v.StatusCode*/, "since", latency)
+			}()
 		}
 	}
+
 	return m
 }

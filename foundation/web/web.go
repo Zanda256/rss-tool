@@ -39,6 +39,7 @@ func (a *App) Handle(method, path string, handler Handler, mw ...Middleware) { /
 			c.Error(err)
 		}
 	}
+
 	handlerChain := make([]gin.HandlerFunc, 0)
 	for i := len(mw) - 1; i >= 0; i-- {
 		mwFunc := a.mw[i]

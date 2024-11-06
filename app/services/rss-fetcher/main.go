@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/Zanda256/rss-tool/app/services/rss-fetcher/v1/handlers"
+	"github.com/Zanda256/rss-tool/business/data/searchIndex/es"
 	v1 "github.com/Zanda256/rss-tool/business/web/v1"
 	"github.com/Zanda256/rss-tool/foundation/logger"
 )
@@ -21,6 +22,10 @@ const (
 	HttpClientReqTimeoutEnvKey = "CLIENT_REQ_TIMEOUT"
 	APIPortEnvKey              = "API_PORT"
 	APIHostEnvKey              = "API_HOST"
+
+	EsUrlEnvKey      = "ES_URL"
+	EsPasswordEnvKey = "ES_PASSWORD"
+	EsUserEnvKey     = "ES_USER"
 )
 
 // if we are building locally, build will default to `develop`
@@ -40,7 +45,7 @@ func main() {
 		return "test run"
 	}
 
-	log = logger.NewWithEvents(os.Stdout, logger.LevelInfo, "SALES-API", traceIDFunc, events)
+	log = logger.NewWithEvents(os.Stdout, logger.LevelInfo, "RSS-PERCEVAL", traceIDFunc, events)
 
 	// -------------------------------------------------------------------------
 
@@ -76,10 +81,14 @@ func run(ctx context.Context, log *logger.Logger) error {
 				Timeout             string
 			}
 		}
-		Solr struct {
+		ES struct {
+			User     string
+			Password string
+			URL      string
 		}
 	}{}
 
+	// Get web configs
 	cfg.Web.API.Port = getEnvValue(APIPortEnvKey, "6000")
 	cfg.Web.API.Host = getEnvValue(APIHostEnvKey, "0.0.0.0")
 	cfg.Web.Client.MaxIdleConnsPerHost = getEnvValue(MaxIdleConnsEnvKey, "20")
@@ -106,6 +115,21 @@ func run(ctx context.Context, log *logger.Logger) error {
 		Timeout: 10 * time.Second,
 	}
 
+	// Get ES configs
+	cfg.ES.URL = mustGet(EsUrlEnvKey)
+	cfg.ES.Password = mustGet(EsPasswordEnvKey)
+	cfg.ES.User = mustGet(EsUserEnvKey)
+
+	// Bootstrap es db
+	esClient, err := es.NewESClient(es.Config{
+		URL:      cfg.ES.URL,
+		User:     cfg.ES.User,
+		Password: cfg.ES.Password,
+	})
+	if err != nil {
+		return err
+	}
+
 	log.Info(ctx, "startup", "status", "initializing V1 API support")
 
 	shutdown := make(chan os.Signal, 1)
@@ -116,6 +140,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		Build:     build,
 		Shutdown:  shutdown,
 		Log:       log,
+		Db:        esClient,
 	}
 
 	apiMux := v1.APIMux(cfgMux, handlers.Routes{})

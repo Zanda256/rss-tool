@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/Zanda256/rss-tool/business/data/searchIndex/es"
 	"github.com/Zanda256/rss-tool/business/web/v1/mid"
 	"github.com/Zanda256/rss-tool/foundation/logger"
 	"github.com/Zanda256/rss-tool/foundation/web"
@@ -15,6 +16,7 @@ type APIMuxConfig struct {
 	Build     string
 	Shutdown  chan os.Signal
 	Log       *logger.Logger
+	Db        *es.EsClient
 }
 
 // RouteAdder defines behavior that sets the routes to bind for an instance

@@ -9,6 +9,9 @@ import (
 type Routes struct{}
 
 // Add implements the RouterAdder interface.
-func (Routes) Add(app *web.App, cfg v1.APIMuxConfig) {
-	fetchgrp.Routes(app)
+func (Routes) Add(app *web.App, apiCfg v1.APIMuxConfig) {
+	fetchgrp.Routes(app, fetchgrp.Config{
+		Log: apiCfg.Log,
+		DB:  apiCfg.Db,
+	})
 }
